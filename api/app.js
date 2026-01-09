@@ -1,5 +1,3 @@
-require("dotenv").config();
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -8,57 +6,43 @@ const todoRouter = require("../router/todorouter");
 
 const app = express();
 
-/* -------------------- MIDDLEWARE -------------------- */
+// MongoDB URL
+const url_path =
+  "mongodb+srv://root:root@todoo.wb1jnon.mongodb.net/todo?appName=todoo";
+
+// Middlewares
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(
   cors({
-    origin: "*",
+    origin: [
+      "http://localhost:5173",
+      "https://todoo-tan.vercel.app/"
+    ],
+    credentials: true,
   })
 );
 
-/* -------------------- MONGODB CONNECTION (SERVERLESS SAFE) -------------------- */
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
+// MongoDB connection (prevent multiple connections)
+let isConnected = false;
 
 async function connectDB() {
-  if (cached.conn) return cached.conn;
-
-  if (!cached.promise) {
-    cached.promise = mongoose
-      .connect(process.env.MONGO_URL, {
-        bufferCommands: false,
-      })
-      .then((mongoose) => mongoose);
-  }
-
-  cached.conn = await cached.promise;
-  return cached.conn;
+  if (isConnected) return;
+  await mongoose.connect(url_path);
+  isConnected = true;
+  console.log("MongoDB connected");
 }
 
-/* -------------------- DB CONNECT PER REQUEST -------------------- */
+// Ensure DB connected before every request
 app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (error) {
-    console.error("MongoDB connection error:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Database connection failed",
-      error: error.message,
-    });
-  }
+  await connectDB();
+  next();
 });
 
-/* -------------------- ROUTES -------------------- */
-app.get("/", (req, res) => {
-  res.json({ success: true, message: "Todo API running 🚀" });
-});
-
+// Routes
 app.use("/api", todoRouter);
 
-/* -------------------- EXPORT (NO app.listen) -------------------- */
+// ❌ NO app.listen()
+// ✅ EXPORT APP
 module.exports = app;
