@@ -18,7 +18,7 @@ exports.posttodoitem = async (req, res, next) => {
 };
 exports.gettodoitem = async (req, res, next) => {
   try {
-    const todoitem = await TODO.find();
+    const todoitem = await TODO.find().sort({ createdAt: -1 });;
     res.status(200).json({ success: true, message: "data recived", todoitem });
   } catch (error) {
     res

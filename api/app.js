@@ -6,43 +6,41 @@ const todoRouter = require("../router/todorouter");
 
 const app = express();
 
-// MongoDB URL
-const url_path =
-  "mongodb+srv://root:root@todoo.wb1jnon.mongodb.net/todo?appName=todoo";
-
-// Middlewares
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://todoo-tan.vercel.app/"
-    ],
-    credentials: true,
+    origin: "*",
   })
 );
 
-// MongoDB connection (prevent multiple connections)
 let isConnected = false;
 
 async function connectDB() {
   if (isConnected) return;
-  await mongoose.connect(url_path);
-  isConnected = true;
-  console.log("MongoDB connected");
+
+  try {
+    await mongoose.connect(process.env.MONGO_URL);
+    isConnected = true;
+    console.log("MongoDB connected");
+  } catch (err) {
+    console.error("Mongo error", err);
+    throw err;
+  }
 }
 
-// Ensure DB connected before every request
 app.use(async (req, res, next) => {
-  await connectDB();
-  next();
+  try {
+    await connectDB();
+    next();
+  } catch {
+    res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+    });
+  }
 });
 
-// Routes
 app.use("/api", todoRouter);
 
-// ❌ NO app.listen()
-// ✅ EXPORT APP
 module.exports = app;
