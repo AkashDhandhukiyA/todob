@@ -18,7 +18,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://todoo-tan.vercel.app/"
+      "https://todo-ten-sigma-34.vercel.app/"
     ],
     credentials: true,
   })
